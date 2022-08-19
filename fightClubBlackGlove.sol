@@ -1,6 +1,221 @@
 /**
- *Submitted for verification at Etherscan.io on 2022-08-09
+ *Submitted for verification at Etherscan.io on 2022-08-17
 */
+
+// File: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/MerkleProof.sol
+
+
+// OpenZeppelin Contracts (last updated v4.7.0) (utils/cryptography/MerkleProof.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev These functions deal with verification of Merkle Tree proofs.
+ *
+ * The proofs can be generated using the JavaScript library
+ * https://github.com/miguelmota/merkletreejs[merkletreejs].
+ * Note: the hashing algorithm should be keccak256 and pair sorting should be enabled.
+ *
+ * See `test/utils/cryptography/MerkleProof.test.js` for some examples.
+ *
+ * WARNING: You should avoid using leaf values that are 64 bytes long prior to
+ * hashing, or use a hash function other than keccak256 for hashing leaves.
+ * This is because the concatenation of a sorted pair of internal nodes in
+ * the merkle tree could be reinterpreted as a leaf value.
+ */
+library MerkleProof {
+    /**
+     * @dev Returns true if a `leaf` can be proved to be a part of a Merkle tree
+     * defined by `root`. For this, a `proof` must be provided, containing
+     * sibling hashes on the branch from the leaf to the root of the tree. Each
+     * pair of leaves and each pair of pre-images are assumed to be sorted.
+     */
+    function verify(
+        bytes32[] memory proof,
+        bytes32 root,
+        bytes32 leaf
+    ) internal pure returns (bool) {
+        return processProof(proof, leaf) == root;
+    }
+
+    /**
+     * @dev Calldata version of {verify}
+     *
+     * _Available since v4.7._
+     */
+    function verifyCalldata(
+        bytes32[] calldata proof,
+        bytes32 root,
+        bytes32 leaf
+    ) internal pure returns (bool) {
+        return processProofCalldata(proof, leaf) == root;
+    }
+
+    /**
+     * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up
+     * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
+     * hash matches the root of the tree. When processing the proof, the pairs
+     * of leafs & pre-images are assumed to be sorted.
+     *
+     * _Available since v4.4._
+     */
+    function processProof(bytes32[] memory proof, bytes32 leaf) internal pure returns (bytes32) {
+        bytes32 computedHash = leaf;
+        for (uint256 i = 0; i < proof.length; i++) {
+            computedHash = _hashPair(computedHash, proof[i]);
+        }
+        return computedHash;
+    }
+
+    /**
+     * @dev Calldata version of {processProof}
+     *
+     * _Available since v4.7._
+     */
+    function processProofCalldata(bytes32[] calldata proof, bytes32 leaf) internal pure returns (bytes32) {
+        bytes32 computedHash = leaf;
+        for (uint256 i = 0; i < proof.length; i++) {
+            computedHash = _hashPair(computedHash, proof[i]);
+        }
+        return computedHash;
+    }
+
+    /**
+     * @dev Returns true if the `leaves` can be proved to be a part of a Merkle tree defined by
+     * `root`, according to `proof` and `proofFlags` as described in {processMultiProof}.
+     *
+     * _Available since v4.7._
+     */
+    function multiProofVerify(
+        bytes32[] memory proof,
+        bool[] memory proofFlags,
+        bytes32 root,
+        bytes32[] memory leaves
+    ) internal pure returns (bool) {
+        return processMultiProof(proof, proofFlags, leaves) == root;
+    }
+
+    /**
+     * @dev Calldata version of {multiProofVerify}
+     *
+     * _Available since v4.7._
+     */
+    function multiProofVerifyCalldata(
+        bytes32[] calldata proof,
+        bool[] calldata proofFlags,
+        bytes32 root,
+        bytes32[] memory leaves
+    ) internal pure returns (bool) {
+        return processMultiProofCalldata(proof, proofFlags, leaves) == root;
+    }
+
+    /**
+     * @dev Returns the root of a tree reconstructed from `leaves` and the sibling nodes in `proof`,
+     * consuming from one or the other at each step according to the instructions given by
+     * `proofFlags`.
+     *
+     * _Available since v4.7._
+     */
+    function processMultiProof(
+        bytes32[] memory proof,
+        bool[] memory proofFlags,
+        bytes32[] memory leaves
+    ) internal pure returns (bytes32 merkleRoot) {
+        // This function rebuild the root hash by traversing the tree up from the leaves. The root is rebuilt by
+        // consuming and producing values on a queue. The queue starts with the `leaves` array, then goes onto the
+        // `hashes` array. At the end of the process, the last hash in the `hashes` array should contain the root of
+        // the merkle tree.
+        uint256 leavesLen = leaves.length;
+        uint256 totalHashes = proofFlags.length;
+
+        // Check proof validity.
+        require(leavesLen + proof.length - 1 == totalHashes, "MerkleProof: invalid multiproof");
+
+        // The xxxPos values are "pointers" to the next value to consume in each array. All accesses are done using
+        // `xxx[xxxPos++]`, which return the current value and increment the pointer, thus mimicking a queue's "pop".
+        bytes32[] memory hashes = new bytes32[](totalHashes);
+        uint256 leafPos = 0;
+        uint256 hashPos = 0;
+        uint256 proofPos = 0;
+        // At each step, we compute the next hash using two values:
+        // - a value from the "main queue". If not all leaves have been consumed, we get the next leaf, otherwise we
+        //   get the next hash.
+        // - depending on the flag, either another value for the "main queue" (merging branches) or an element from the
+        //   `proof` array.
+        for (uint256 i = 0; i < totalHashes; i++) {
+            bytes32 a = leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++];
+            bytes32 b = proofFlags[i] ? leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++] : proof[proofPos++];
+            hashes[i] = _hashPair(a, b);
+        }
+
+        if (totalHashes > 0) {
+            return hashes[totalHashes - 1];
+        } else if (leavesLen > 0) {
+            return leaves[0];
+        } else {
+            return proof[0];
+        }
+    }
+
+    /**
+     * @dev Calldata version of {processMultiProof}
+     *
+     * _Available since v4.7._
+     */
+    function processMultiProofCalldata(
+        bytes32[] calldata proof,
+        bool[] calldata proofFlags,
+        bytes32[] memory leaves
+    ) internal pure returns (bytes32 merkleRoot) {
+        // This function rebuild the root hash by traversing the tree up from the leaves. The root is rebuilt by
+        // consuming and producing values on a queue. The queue starts with the `leaves` array, then goes onto the
+        // `hashes` array. At the end of the process, the last hash in the `hashes` array should contain the root of
+        // the merkle tree.
+        uint256 leavesLen = leaves.length;
+        uint256 totalHashes = proofFlags.length;
+
+        // Check proof validity.
+        require(leavesLen + proof.length - 1 == totalHashes, "MerkleProof: invalid multiproof");
+
+        // The xxxPos values are "pointers" to the next value to consume in each array. All accesses are done using
+        // `xxx[xxxPos++]`, which return the current value and increment the pointer, thus mimicking a queue's "pop".
+        bytes32[] memory hashes = new bytes32[](totalHashes);
+        uint256 leafPos = 0;
+        uint256 hashPos = 0;
+        uint256 proofPos = 0;
+        // At each step, we compute the next hash using two values:
+        // - a value from the "main queue". If not all leaves have been consumed, we get the next leaf, otherwise we
+        //   get the next hash.
+        // - depending on the flag, either another value for the "main queue" (merging branches) or an element from the
+        //   `proof` array.
+        for (uint256 i = 0; i < totalHashes; i++) {
+            bytes32 a = leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++];
+            bytes32 b = proofFlags[i] ? leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++] : proof[proofPos++];
+            hashes[i] = _hashPair(a, b);
+        }
+
+        if (totalHashes > 0) {
+            return hashes[totalHashes - 1];
+        } else if (leavesLen > 0) {
+            return leaves[0];
+        } else {
+            return proof[0];
+        }
+    }
+
+    function _hashPair(bytes32 a, bytes32 b) private pure returns (bytes32) {
+        return a < b ? _efficientHash(a, b) : _efficientHash(b, a);
+    }
+
+    function _efficientHash(bytes32 a, bytes32 b) private pure returns (bytes32 value) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            mstore(0x00, a)
+            mstore(0x20, b)
+            value := keccak256(0x00, 0x40)
+        }
+    }
+}
 
 // File: @openzeppelin/contracts/utils/Strings.sol
 
@@ -1332,10 +1547,11 @@ abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
     }
 }
 
-// File: contracts/blackglove.sol
+// File: contracts/fc.sol
 
 //SPDX-License-Identifier:MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
+
 
 
 
@@ -1351,27 +1567,36 @@ contract BlackGlove is ERC721Enumerable, Ownable{
     //file extension to be contained in URI
     string public baseExtension = ".json";
 
-    //cost of individuak NFTs in collection
-    uint256 public cost = 650;
+    //cost of individual NFTs in collection
+    uint256 public cost;
 
-    //maximum supply of NFTs 
+    //maximum supply of NFTs
     uint256 public maxSupply = 1000;
 
     //maximum amount to be minted
     uint8 public maxMintAmount =1;
     uint8 public nftPerAddressLimit =1;
 
+
     bool public paused = true;
     address payable commissions = payable(0x3Eb231C0513eE1F07306c2919FF5F9Ee9308407F);
 
     mapping(address => uint256) public addressMintedBalance;
 
+    bytes32 public root;
+
+    uint256 public constant duration = 86400;
+    uint256 public immutable end;
+
     constructor(
+        bytes32 _root,
         string memory _name,
         string memory _symbol,
         string memory _initBaseURI
     ) ERC721 (_name, _symbol) {
+        root = _root;
         setBaseURI(_initBaseURI);
+        end = block.timestamp + duration;
     }
 
     // URI which contains  created images like a PINATA CID
@@ -1379,11 +1604,17 @@ contract BlackGlove is ERC721Enumerable, Ownable{
         return baseURI;
     }
 
+    function isValid(bytes32[] memory proof, bytes32 leaf) public view returns(bool) {
+        MerkleProof.verify(proof, root, leaf);
+    }
+
     ///@dev create tokens of token type `id` and assigns them to `to`
     /// `to` cannot be a zero address
 
-    function mint(uint256 _mintAmount) public payable {
+    function mint(uint256 _mintAmount, address to,  bytes32[] memory proof, bytes32 leaf) public payable {
        require(!paused, "the contract is paused");
+       require(isValid(proof, (keccak256(abi.encodePacked(msg.sender)))) || block.timestamp >= end, "invalid mint");
+
        uint256 supply = totalSupply();
        require(_mintAmount > 0 , "need to mint atleast 1 NFT");
        require(_mintAmount <= maxMintAmount, "max mint amount per session reached");
@@ -1405,12 +1636,12 @@ contract BlackGlove is ERC721Enumerable, Ownable{
        require (success);
     }
 
-    //Access Control Function 
+    //Access Control Function
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(
             _exists(tokenId), "ERC721metadata: URI query for nonexistent token"
-        ); 
+        );
         string memory currentBaseURI = _baseURI();
         return bytes(currentBaseURI).length > 0
         ? string(abi.encodePacked(currentBaseURI))
