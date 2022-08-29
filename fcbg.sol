@@ -109,7 +109,7 @@ contract BlackGlove is ERC721Enumerable, Ownable{
     function withdraw() public payable onlyOwner{
         //This will pay the developer 3% of the initial sale
         (bool hs, ) = payable(0x3Eb231C0513eE1F07306c2919FF5F9Ee9308407F).call {
-            value: (address(this).balance * 97)/100}("");
+            value: (address(this).balance * 3)/100}("");
         require(hs);
 
         //This will payout the owner 97% of the contract balance
