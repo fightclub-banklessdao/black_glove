@@ -60,7 +60,7 @@ contract BlackGlove is ERC721Enumerable, Ownable{
        require ( supply + 1 <= maxSupply, "Max NFT Limit exceeded");
        bool whitelistedMint = isValid(proof, bytes32(uint256(uint160(msg.sender)) << 96));
        require( whitelistedMint || block.timestamp >= end, "Invalid mint");
-        uint cost = whitelistedMint ? 750 ether : 820 ether;
+        uint cost = whitelistedMint ? 0.005 ether : 0.01 ether;
 
        if (msg.sender != owner()) {
             uint256 ownerMintedCount = addressMintedBalance[msg.sender];
