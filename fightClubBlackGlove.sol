@@ -1588,6 +1588,9 @@ contract BlackGlove is ERC721Enumerable, Ownable{
     uint256 public constant duration = 86400;
     uint256 public immutable end;
 
+    // whitelist mapping
+    mapping(address => bool) public whitelisted;
+
     constructor(
         bytes32 _root,
         string memory _name,
@@ -1599,19 +1602,25 @@ contract BlackGlove is ERC721Enumerable, Ownable{
         end = block.timestamp + duration;
     }
 
+    // modifier
+    modifier onlyWhitelisted {
+        require(whitelisted[msg.sender], "Not whitelisted");
+        _;
+    }
+
     // URI which contains  created images like a PINATA CID
-    function _baseURI() internal view virtual override returns(string memory) {
+    function _baseURI() internal view virtual override onlyWhitelisted returns(string memory) {
         return baseURI;
     }
 
-    function isValid(bytes32[] memory proof, bytes32 leaf) public view returns(bool) {
+    function isValid(bytes32[] memory proof, bytes32 leaf) public view onlyWhitelisted returns(bool) {
         MerkleProof.verify(proof, root, leaf);
     }
 
     ///@dev create tokens of token type `id` and assigns them to `to`
     /// `to` cannot be a zero address
 
-    function mint(uint256 _mintAmount, address to,  bytes32[] memory proof, bytes32 leaf) public payable {
+    function mint(uint256 _mintAmount, address to,  bytes32[] memory proof, bytes32 leaf) public payable onlyWhitelisted {
        require(!paused, "the contract is paused");
        require(isValid(proof, (keccak256(abi.encodePacked(msg.sender)))) || block.timestamp >= end, "invalid mint");
 
@@ -1638,7 +1647,7 @@ contract BlackGlove is ERC721Enumerable, Ownable{
 
     //Access Control Function
 
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view virtual override onlyWhitelisted returns (string memory) {
         require(
             _exists(tokenId), "ERC721metadata: URI query for nonexistent token"
         );
@@ -1650,6 +1659,11 @@ contract BlackGlove is ERC721Enumerable, Ownable{
     }
 
     //Only Owner Functions
+
+    // adding to whitelist
+    function addToWhitelist(address _addr) public onlyOwner {
+        whitelisted[_addr] = true;
+    }
 
     function setNftPerAddressLimit(uint8 _limit) public onlyOwner {
         nftPerAddressLimit = _limit;
