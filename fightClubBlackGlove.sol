@@ -1568,7 +1568,7 @@ contract BlackGlove is ERC721Enumerable, Ownable{
     string public baseExtension = ".json";
 
     //cost of individual NFTs in collection
-    uint256 public cost;
+    uint256 public cost = 750;
 
     //maximum supply of NFTs
     uint256 public maxSupply = 1000;
@@ -1578,7 +1578,7 @@ contract BlackGlove is ERC721Enumerable, Ownable{
     uint8 public nftPerAddressLimit =1;
 
 
-    bool public paused = true;
+    bool public paused = false;
     address payable commissions = payable(0x3Eb231C0513eE1F07306c2919FF5F9Ee9308407F);
 
     mapping(address => uint256) public addressMintedBalance;
