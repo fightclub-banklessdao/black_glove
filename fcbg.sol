@@ -22,7 +22,7 @@ contract BlackGlove is ERC721Enumerable, Ownable{
 
 
     bool public paused = false;
-    address payable commissions = payable(0x3Eb231C0513eE1F07306c2919FF5F9Ee9308407F);
+    address payable commissions = payable(0x0Abb12C338ee65160c96061051E38a71F49CA471);
 
     mapping(address => uint256) public addressMintedBalance;
 
