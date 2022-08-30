@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-///@title Contract to deploy BlackGlove to OpenSea
+///@title Contract to deploy BlackGlove nft 
 
 contract BlackGlove is ERC721Enumerable, Ownable{
    using Strings for uint256;
@@ -22,7 +22,7 @@ contract BlackGlove is ERC721Enumerable, Ownable{
 
 
     bool public paused = false;
-    address payable commissions = payable(0x0Abb12C338ee65160c96061051E38a71F49CA471);
+    address payable commissions = payable(0x3Eb231C0513eE1F07306c2919FF5F9Ee9308407F);
 
     mapping(address => uint256) public addressMintedBalance;
 
@@ -58,10 +58,10 @@ contract BlackGlove is ERC721Enumerable, Ownable{
        require(!paused, "Black Glove is paused");
         uint256 supply = totalSupply();
        require ( supply + 1 <= maxSupply, "Max NFT Limit exceeded");
-       bool whitelistedMint = isValid(proof, bytes32(uint256(uint160(msg.sender)) << 96));
-       require( whitelistedMint || block.timestamp >= end, "Invalid mint");
-        uint cost = whitelistedMint ? 0.005 ether : 0.01 ether;
 
+       bool whitelistedMint = isValid(proof, (keccak256(abi.encodePacked(msg.sender))));
+       require( whitelistedMint || block.timestamp >= end, "Invalid mint");
+        uint cost = whitelistedMint ? 750 ether : 820 ether;
        if (msg.sender != owner()) {
             uint256 ownerMintedCount = addressMintedBalance[msg.sender];
             require(ownerMintedCount == 0, "Already minted");
@@ -109,7 +109,7 @@ contract BlackGlove is ERC721Enumerable, Ownable{
     function withdraw() public payable onlyOwner{
         //This will pay the developer 3% of the initial sale
         (bool hs, ) = payable(0x3Eb231C0513eE1F07306c2919FF5F9Ee9308407F).call {
-            value: (address(this).balance * 3)/100}("");
+            value: (address(this).balance * 97)/100}("");
         require(hs);
 
         //This will payout the owner 97% of the contract balance
